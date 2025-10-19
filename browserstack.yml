@@ -1,0 +1,57 @@
+# BrowserStack configuration for Detox tests
+# https://www.browserstack.com/docs/app-automate/appium/getting-started/nodejs
+
+# Authentication
+userName: ${BROWSERSTACK_USERNAME}
+accessKey: ${BROWSERSTACK_ACCESS_KEY}
+
+# App configuration
+app: bs://<app-id>  # Replace with your uploaded app ID
+
+# Framework configuration
+framework: detox
+platformName: android
+
+# Device capabilities for Android
+devices:
+  - deviceName: "Google Pixel 5"
+    platformVersion: "12.0"
+    platformName: "android"
+    app: bs://<android-app-id>
+  
+  - deviceName: "Samsung Galaxy S21"
+    platformVersion: "11.0"
+    platformName: "android"
+    app: bs://<android-app-id>
+
+# Device capabilities for iOS
+iosDevices:
+  - deviceName: "iPhone 14"
+    platformVersion: "16.0"
+    platformName: "ios"
+    app: bs://<ios-app-id>
+  
+  - deviceName: "iPhone 13"
+    platformVersion: "15.0"
+    platformName: "ios"
+    app: bs://<ios-app-id>
+
+# Test execution settings
+buildName: "Detox E2E Tests"
+projectName: "Detox Starter"
+local: false
+debug: false
+networkLogs: true
+video: true
+deviceLogs: true
+appiumLogs: true
+
+# Timeout settings
+idleTimeout: 300
+maxDuration: 3600
+commandTimeout: 300
+
+# Additional capabilities
+autoAcceptAlerts: true
+autoGrantPermissions: true
+enableAnimations: false

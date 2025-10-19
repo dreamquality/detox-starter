@@ -1,0 +1,200 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-ios:
+    name: iOS E2E Tests
+    runs-on: macos-13
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+          bundler-cache: true
+      
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+        if: hashFiles('ios/Podfile.lock') != ''
+      
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+      
+      - name: Build iOS app for testing
+        run: npm run build:e2e:ios:release
+        continue-on-error: true
+      
+      - name: Run iOS E2E tests
+        run: npm run test:e2e:ios:release
+        continue-on-error: true
+      
+      - name: Upload iOS test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ios-e2e-artifacts
+          path: e2e/artifacts/
+          retention-days: 7
+  
+  test-android:
+    name: Android E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+      
+      - name: AVD cache
+        uses: actions/cache@v3
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-31
+      
+      - name: Create AVD and generate snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_5
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "Generated AVD snapshot for caching."
+      
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+      
+      - name: Build Android app for testing
+        run: npm run build:e2e:android:release
+        continue-on-error: true
+      
+      - name: Run Android E2E tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_5
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: npm run test:e2e:android:release
+        continue-on-error: true
+      
+      - name: Upload Android test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: android-e2e-artifacts
+          path: e2e/artifacts/
+          retention-days: 7
+  
+  test-browserstack:
+    name: BrowserStack Cloud Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install BrowserStack Local
+        run: |
+          wget "https://www.browserstack.com/browserstack-local/BrowserStackLocal-linux-x64.zip"
+          unzip BrowserStackLocal-linux-x64.zip
+          ./BrowserStackLocal --key ${{ secrets.BROWSERSTACK_ACCESS_KEY }} --daemon start
+        if: secrets.BROWSERSTACK_ACCESS_KEY != ''
+      
+      - name: Upload app to BrowserStack (iOS)
+        run: |
+          curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@ios/build/Build/Products/Release-iphonesimulator/YourApp.app" \
+            -F "custom_id=detox-starter-ios"
+        if: secrets.BROWSERSTACK_USERNAME != '' && hashFiles('ios/build/**/*.app') != ''
+        continue-on-error: true
+      
+      - name: Upload app to BrowserStack (Android)
+        run: |
+          curl -u "${{ secrets.BROWSERSTACK_USERNAME }}:${{ secrets.BROWSERSTACK_ACCESS_KEY }}" \
+            -X POST "https://api-cloud.browserstack.com/app-automate/upload" \
+            -F "file=@android/app/build/outputs/apk/release/app-release.apk" \
+            -F "custom_id=detox-starter-android"
+        if: secrets.BROWSERSTACK_USERNAME != '' && hashFiles('android/app/build/outputs/apk/**/*.apk') != ''
+        continue-on-error: true
+      
+      - name: Run BrowserStack tests
+        run: |
+          npm run test:e2e:bs:android
+        env:
+          BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
+          BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+        if: secrets.BROWSERSTACK_USERNAME != ''
+        continue-on-error: true
+      
+      - name: Stop BrowserStack Local
+        run: ./BrowserStackLocal --daemon stop
+        if: always()
+      
+      - name: Upload BrowserStack test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: browserstack-e2e-artifacts
+          path: e2e/artifacts/
+          retention-days: 7

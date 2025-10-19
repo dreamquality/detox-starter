@@ -1,0 +1,21 @@
+{
+  "testEnvironment": "./e2e/environment",
+  "testRunner": "jest",
+  "testTimeout": 120000,
+  "testRegex": "\\.e2e\\.js$",
+  "reporters": [
+    "detox/runners/jest/reporter",
+    [
+      "jest-html-reporters",
+      {
+        "publicPath": "./e2e/artifacts/html-report",
+        "filename": "report.html",
+        "expand": true,
+        "pageTitle": "Detox E2E Test Report"
+      }
+    ]
+  ],
+  "verbose": true,
+  "bail": false,
+  "maxWorkers": 1
+}
