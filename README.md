@@ -1,6 +1,19 @@
 # Detox Starter
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16-brightgreen)](https://nodejs.org/)
+[![Detox](https://img.shields.io/badge/Detox-20.14-blue)](https://wix.github.io/Detox/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 A comprehensive boilerplate for end-to-end testing using [Detox](https://wix.github.io/Detox/) for native mobile applications on iOS and Android. This starter kit includes best practices, multiple configuration options, BrowserStack cloud integration, GitHub Actions CI/CD, and comprehensive test reporting.
+
+## 📚 Quick Links
+
+- [Quick Start Guide](QUICKSTART.md) - Get started in 5 minutes
+- [Setup Guide](docs/SETUP.md) - Detailed platform setup
+- [Integration Guide](docs/INTEGRATION.md) - Integrate with your app
+- [Best Practices](docs/BEST_PRACTICES.md) - Testing best practices
+- [Contributing](CONTRIBUTING.md) - Contribution guidelines
 
 ## 🚀 Features
 
