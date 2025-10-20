@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  extends: ['eslint:recommended', 'plugin:detox/recommended', 'prettier'],
+  extends: ['eslint:recommended', 'prettier'],
   env: {
     node: true,
     jest: true,
@@ -9,6 +9,13 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2021,
     sourceType: 'module',
+  },
+  globals: {
+    device: 'readonly',
+    element: 'readonly',
+    by: 'readonly',
+    waitFor: 'readonly',
+    expect: 'readonly',
   },
   rules: {
     'no-console': 'warn',
